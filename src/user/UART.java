@@ -1,10 +1,13 @@
 package user;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.swing.JButton;
@@ -30,9 +33,15 @@ public class UART extends JFrame {
 
 	private JButton openButton;
 	private JButton closeButton;
+	
+	private JComboBox<String> comPortComboBox;
+	private JComboBox<String> baudrateComboBox;
+	private JComboBox<String> dataBitsComboBox;
+	private JComboBox<String> parityBitComboBox;
+	private JComboBox<String> stopBitComboBox;
 
 	private Boolean serialPortOpen = false;
-
+	
 	/** The opened RS-232 serial communications port. */
 	private SerialPort serialPort = null;
 
@@ -68,15 +77,10 @@ public class UART extends JFrame {
 	 */
 	public UART() {
 
-		Enumeration portID = CommPortIdentifier.getPortIdentifiers();
-
-		while (portID.hasMoreElements()) {
-			System.out.println(((CommPortIdentifier) portID.nextElement())
-					.getName());
-		}
-
 		/* Init the GUI */
 		initGUI();
+		
+		
 	}
 
 	/**
@@ -91,54 +95,68 @@ public class UART extends JFrame {
 	private void openSerialPort() {
 		Boolean foundPort = false;
 
-		// //Ist schon ein Port geoeffnet wird nichts gemacht
-		// if (serialPortOpen != false) {
-		// System.out.println("Serialport bereits geoeffnet");
-		// return;
-		// }
-		// System.out.println("Oeffne Serialport");
-		//
-		//
-		// try {
-		// // get COM Port Identifier
-		// //CommPortIdentifier commPortID =
-		// CommPortIdentifier.getPortIdentifier(port);
-		//
-		// // open COM Port
-		// //serialPort = (SerialPort) commPortIndetifier.open("serial " + port,
-		// 2000);
-		//
-		// // SerialSend und SerialReceive erzeugen
-		// serialSend = new SerialSend(serialPort, this);
-		// serialRecv = new SerialRecv(serialPort, this);
-		//
-		// // SerialPort konfigurieren
-		// // 8N1, 4800 Baud
-		// serialPort.setSerialPortParams( 4800,
-		// SerialPort.DATABITS_8,
-		// SerialPort.STOPBITS_1,
-		// SerialPort.PARITY_NONE);
-		// serialPort.addEventListener(serialRecv);
-		// serialPort.notifyOnBreakInterrupt(false);
-		// serialPort.notifyOnCarrierDetect(false);
-		// serialPort.notifyOnCTS(false);
-		// serialPort.notifyOnDataAvailable(true);
-		// serialPort.notifyOnDSR(false);
-		// serialPort.notifyOnFramingError(false);
-		// serialPort.notifyOnOutputEmpty(false);
-		// serialPort.notifyOnOverrunError(false);
-		// serialPort.notifyOnParityError(false);
-		// serialPort.notifyOnRingIndicator(false);
-		//
-		// } catch (NoSuchPortException e) {
-		// e.printStackTrace();
-		// } catch (PortInUseException e) {
-		// e.printStackTrace();
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
+		 //Ist schon ein Port geoeffnet wird nichts gemacht
+		 if (serialPortOpen != false) {
+		 System.out.println("Serialport already opened");
+		 return;
+		 }
+		 
+		 String selectedPort = (String) comPortComboBox.getSelectedItem();
+		 
+		 if(!selectedPort.contentEquals("Select port")){
+			 
+			 System.out.println("Oeffne Serialport");
+			 
+			 try {
+				 // get COM Port Identifier
+				 CommPortIdentifier commPortID = CommPortIdentifier.getPortIdentifier(selectedPort);
+				
+				 // open COM Port
+				 serialPort = (SerialPort) commPortID.open("serial " + selectedPort, 2000);
+				
+				 // SerialSend und SerialReceive erzeugen
+				 serialSend = new SerialSend(serialPort, this);
+				 serialRecv = new SerialRecv(serialPort, this);
+				 
+				 Map<String, Integer> serialConfigurationMap = getConfigurationMap();
+				 
+				 System.out.println(Integer.parseInt((String) baudrateComboBox.getSelectedItem()));
+				 System.out.println((String) dataBitsComboBox.getSelectedItem());
+				 System.out.println((String) stopBitComboBox.getSelectedItem());
+				 System.out.println((String) parityBitComboBox.getSelectedItem());
+				 
+				
+				 serialPort.setSerialPortParams(Integer.parseInt((String) baudrateComboBox.getSelectedItem()) ,
+				 serialConfigurationMap.get((String) dataBitsComboBox.getSelectedItem()),
+				 serialConfigurationMap.get((String) stopBitComboBox.getSelectedItem()),
+				 serialConfigurationMap.get((String) parityBitComboBox.getSelectedItem()));
+				 serialPort.addEventListener(serialRecv);
+				 serialPort.notifyOnBreakInterrupt(false);
+				 serialPort.notifyOnCarrierDetect(false);
+				 serialPort.notifyOnCTS(false);
+				 serialPort.notifyOnDataAvailable(true);
+				 serialPort.notifyOnDSR(false);
+				 serialPort.notifyOnFramingError(false);
+				 serialPort.notifyOnOutputEmpty(false);
+				 serialPort.notifyOnOverrunError(false);
+				 serialPort.notifyOnParityError(false);
+				 serialPort.notifyOnRingIndicator(false);
+				
+				 } catch (NoSuchPortException e) {
+				 e.printStackTrace();
+				 } catch (PortInUseException e) {
+				 e.printStackTrace();
+				 } catch (Exception e) {
+				 e.printStackTrace();
+				 }
 
-		serialPortOpen = true;
+				serialPortOpen = true;
+		 }
+		 else{
+			 System.out.println("Please select a port");
+		 }
+		
+
 	}
 
 	/**
@@ -157,20 +175,36 @@ public class UART extends JFrame {
 
 			serialPortOpen = false;
 
-			// serialPort.close();
+			if (serialSend != null) {
+				serialSend = null;
+			}
+			if (serialRecv != null) {
+				serialRecv = null;
+			}
+			if (serialPort != null) {
+				try {
+					serialPort.removeEventListener();
+					serialPort.notifyOnDataAvailable(false);
+					serialPort.close();
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+				}
+				serialPort = null;
+			}
+			
 		} else {
-			System.out.println("Serialport bereits geschlossen");
+			System.out.println("Serialport already closed");
 		}
 	}
 
 	private void initGUI() {
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 250, 300);
+		setBounds(100, 100, 350, 400);
 		this.setResizable(false);
 
-		contentPane = new JPanel(new MigLayout("", "[100][150]",
-				"[][][][][]40[][]")); // Row constraints
+		contentPane = new JPanel(new MigLayout("", "[100][250]",
+				"[][][][][]40[]10[]40[]")); // Row constraints
 
 		setContentPane(contentPane);
 
@@ -186,24 +220,42 @@ public class UART extends JFrame {
 		contentPane.add(new JLabel("Parity:"), "height 30, cell 0 3");
 		contentPane.add(new JLabel("Stop bits:"), "height 30, cell 0 4");
 
-		String baud[] = { "1200", "2400", "4800", "9600", "19200", "38400",
+		String[] baud = { "1200", "2400", "4800", "9600", "19200", "38400",
 				"57600", "115200", "230400", "460800", "921600" };
-		String data[] = { "5", "6", "7", "8" };
-		String par[] = { "even", "odd", "none" };
-		String stop[] = { "1", "1.5", "2" };
+		String[] data = { "5", "6", "7", "8" };
+		String[] par = { "even", "odd", "none" };
+		String[] stop = { "1", "1.5", "2" };
+		
+		comPortComboBox = new JComboBox<String>(new String[] {"Select port"});
+		comPortComboBox.setSelectedItem("Select port");
+		
+		
+	    // Combobox Items mit den Namen der Ports hinzufuegen
+	    Enumeration enumComm = CommPortIdentifier.getPortIdentifiers();
+	    while (enumComm.hasMoreElements()) {
+	    	CommPortIdentifier serialPortId = (CommPortIdentifier) enumComm.nextElement();
+	     	if(serialPortId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
+	     		
+	     		//Darauf achten das nur tty und com Schnittstellen hinzugefuegt werden
+	     		if((serialPortId.getName().startsWith("tty")) | (serialPortId.getName().startsWith("com"))){
+	     			comPortComboBox.addItem(serialPortId.getName());
+	     		}
+	    	}
+	    }
 
-		JComboBox<String> baudrateComboBox = new JComboBox<String>(baud);
+		baudrateComboBox = new JComboBox<String>(baud);
 		baudrateComboBox.setSelectedItem("9600");
 
-		JComboBox<String> dataBitsComboBox = new JComboBox<String>(data);
+		dataBitsComboBox = new JComboBox<String>(data);
 		dataBitsComboBox.setSelectedItem("8");
 
-		JComboBox<String> parityBitComboBox = new JComboBox<String>(par);
+		parityBitComboBox = new JComboBox<String>(par);
 		parityBitComboBox.setSelectedItem("none");
 
-		JComboBox<String> stopBitComboBox = new JComboBox<String>(stop);
+		stopBitComboBox = new JComboBox<String>(stop);
 		stopBitComboBox.setSelectedItem("1");
 
+		contentPane.add(comPortComboBox, "width 150, height 30, cell 1 0");
 		contentPane.add(baudrateComboBox, "width 150, height 30, cell 1 1");
 		contentPane.add(dataBitsComboBox, "width 150, height 30, cell 1 2");
 		contentPane.add(parityBitComboBox, "width 150, height 30, cell 1 3");
@@ -244,6 +296,53 @@ public class UART extends JFrame {
 			// Wird das Fenster geschlossen soll auch die serielle Schnittstelle
 			// geschlossen werden.
 			closeSerialPort();
+		}
+	}
+	
+	private Map<String, Integer> getConfigurationMap(){
+		
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		
+		map.put("5", SerialPort.DATABITS_5);
+		map.put("6", SerialPort.DATABITS_6);
+		map.put("7", SerialPort.DATABITS_7);
+		map.put("8", SerialPort.DATABITS_8);
+		
+		map.put("1", SerialPort.STOPBITS_1);
+		map.put("1.5", SerialPort.STOPBITS_1_5);
+		map.put("2", SerialPort.STOPBITS_2);
+		
+		map.put("none", SerialPort.PARITY_NONE);
+		map.put("even", SerialPort.PARITY_EVEN);
+		map.put("odd", SerialPort.PARITY_ODD);
+		
+		return map;
+	}
+	
+	
+	public void putByte(byte newByte) {
+
+		byte[] ar = new byte[1];
+		ar[0] = newByte;
+		msg = new String(ar);
+
+		if (newByte == '\r') {
+			// End of Message
+			// Put Message in Receive-Buffer
+			outmsg = outmsg.concat(msg);
+			try {
+				inQueue.put(outmsg);
+				System.out.println(outmsg);
+			} catch (InterruptedException e) {
+				// TODO handle Exception
+			}
+			msg = "";
+			outmsg = "";
+			startDetected = false;
+		}
+		else {
+			// Add Byte to receive Message String
+			outmsg = outmsg.concat(msg);
 		}
 	}
 

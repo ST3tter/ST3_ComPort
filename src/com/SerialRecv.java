@@ -31,7 +31,7 @@ public class SerialRecv implements SerialPortEventListener {
 	 * Used to call the method SerialInterface.putByte() to process the received
 	 * data bytes.
 	 */
-	private SerialInterface serialInterface = null;
+	private UART serialInterface = null;
 
 	// ----- Implementation
 	// -----------------------------------------------------
@@ -39,7 +39,7 @@ public class SerialRecv implements SerialPortEventListener {
 	/* ---------------------------------------------------------------------- */
 	public SerialRecv(SerialPort serialPort, UART uart) throws IOException {
 
-		// this.serialInterface = uart;
+		this.serialInterface = uart;
 		serialReader = serialPort.getInputStream();
 	}
 
