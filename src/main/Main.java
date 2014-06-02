@@ -23,7 +23,6 @@ public class Main {
 			public void run() {
 				try {
 
-					//hello
 					// Instanziierung des UART Objekts
 					UART frame = new UART();
 					frame.setVisible(true);
