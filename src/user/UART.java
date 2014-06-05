@@ -66,11 +66,8 @@ public class UART extends JFrame {
 	/** String containing one GPS Message */
 	private String outmsg = "";
 
-	/**
-	 * Flag indicating if a Start Sign ('$') has been detected in the incoming
-	 * Serial Data.
-	 */
-	private boolean startDetected = false;
+	/** Flag set if a new message is incoming (< detected)*/
+	private boolean receivingMessage = false;
 
 	/**
 	 * Create the frame.
@@ -326,24 +323,37 @@ public class UART extends JFrame {
 		ar[0] = newByte;
 		msg = new String(ar);
 
-		if (newByte == '\r') {
+		if (newByte == '<') {
+			// new Message Start detected
+			// reset Msg String and add Start-delimiter
+			//outmsg = msg;
+			receivingMessage = true;
+
+		} else if (newByte == '>' && receivingMessage == true) {
 			// End of Message
 			// Put Message in Receive-Buffer
-			outmsg = outmsg.concat(msg);
+			//outmsg = outmsg.concat(msg);
 			try {
 				inQueue.put(outmsg);
-				System.out.println(outmsg);
+				testMethod(outmsg);
 			} catch (InterruptedException e) {
 				// TODO handle Exception
 			}
 			msg = "";
 			outmsg = "";
-			startDetected = false;
-		}
-		else {
+			receivingMessage = false;
+		} else if (receivingMessage == true) {
 			// Add Byte to receive Message String
 			outmsg = outmsg.concat(msg);
+		} else {
+			// Dont process Data
 		}
+	}
+	
+	private void testMethod(String inString)
+	{
+		String[] splittedString = inString.split(";");
+		System.out.println("Event ID: " +splittedString[0] +" Timestamp: " +splittedString[1] +" Task: " +splittedString[2]);
 	}
 
 }
