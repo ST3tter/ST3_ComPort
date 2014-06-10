@@ -5,6 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,7 +104,7 @@ public class UART extends JFrame {
 		 
 		 if(!selectedPort.contentEquals("Select port")){
 			 
-			 System.out.println("Oeffne Serialport");
+			 System.out.println("Open serialport");
 			 
 			 try {
 				 // get COM Port Identifier
@@ -117,10 +119,10 @@ public class UART extends JFrame {
 				 
 				 Map<String, Integer> serialConfigurationMap = getConfigurationMap();
 				 
-				 System.out.println(Integer.parseInt((String) baudrateComboBox.getSelectedItem()));
-				 System.out.println((String) dataBitsComboBox.getSelectedItem());
-				 System.out.println((String) stopBitComboBox.getSelectedItem());
-				 System.out.println((String) parityBitComboBox.getSelectedItem());
+//				 System.out.println(Integer.parseInt((String) baudrateComboBox.getSelectedItem()));
+//				 System.out.println((String) dataBitsComboBox.getSelectedItem());
+//				 System.out.println((String) stopBitComboBox.getSelectedItem());
+//				 System.out.println((String) parityBitComboBox.getSelectedItem());
 				 
 				
 				 serialPort.setSerialPortParams(Integer.parseInt((String) baudrateComboBox.getSelectedItem()) ,
@@ -168,7 +170,7 @@ public class UART extends JFrame {
 
 		// Wenn ein Port geoeffnet ist wird dieser geschlossen
 		if (serialPortOpen == true) {
-			System.out.println("Schliesse Serialport");
+			System.out.println("Close serialport");
 
 			serialPortOpen = false;
 
@@ -241,7 +243,7 @@ public class UART extends JFrame {
 	    }
 
 		baudrateComboBox = new JComboBox<String>(baud);
-		baudrateComboBox.setSelectedItem("9600");
+		baudrateComboBox.setSelectedItem("115200");
 
 		dataBitsComboBox = new JComboBox<String>(data);
 		dataBitsComboBox.setSelectedItem("8");
@@ -353,7 +355,11 @@ public class UART extends JFrame {
 	private void testMethod(String inString)
 	{
 		String[] splittedString = inString.split(";");
-		System.out.println("Event ID: " +splittedString[0] +" Timestamp: " +splittedString[1] +" Task: " +splittedString[2]);
+		int time = Integer.parseInt(splittedString[1],16);
+    	Calendar cal = Calendar.getInstance();
+    	cal.setTimeInMillis(time / 1000);
+		SimpleDateFormat calendarDataFormat = new SimpleDateFormat("mm:ss.SSS");
+		System.out.println("Event ID: " +splittedString[0] +" Timestamp: " +calendarDataFormat.format(cal.getTime()) +" Task: " +splittedString[2]);
 	}
 
 }
